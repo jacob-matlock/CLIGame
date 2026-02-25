@@ -10,10 +10,10 @@ import textwrap
 #==================================================
 
 class Room:
-    def __init__(self, name, description, exits, items, secrets, monsters, visited):
+    def __init__(self, name, description, items, secrets, monsters, visited):
         self.name = name
         self.description = description
-        self.exits = exits
+        self.exits = {}
         self.items = items
         self.secrets = secrets
         self.monsters = monsters
@@ -67,7 +67,8 @@ def pick_up_item(command, current_room, inventory):
             return True
         if "water" in command and "bucket" not in command:
             print("You scoop some water into your hands and raise it to your lips to drink. Before you take a sip, you notice a foul ")
-            print("stench coming from the water, so you let it dribble through your fingers and dry your hands on the cot.")
+            print("stench coming from the water, so you let it dribble through your fingers and dry your hands on the"
+                  "thin cot blanket.")
             return True
         if ("keys" in command or ("jail" in command and "keys" in command)) and "guard" in current_room.monsters:
             return False
@@ -75,6 +76,7 @@ def pick_up_item(command, current_room, inventory):
             print("You picked up the jail keys")
             inventory.append("jail keys")
             current_room.items.remove("jail keys")
+            print("You picked up the jail keys. There are 11 keys but 9 are rusted through, leaving only two in working condition")
             return True
     elif current_room == cell_10:
         if "signet" in command or "ring" in command or ("signet" in command and "ring" in command):
@@ -86,8 +88,15 @@ def pick_up_item(command, current_room, inventory):
         if ("sword" in command or "blade" in command) and "signet ring" in inventory:
             inventory.append("sword")
             current_room.items.remove("sword")
-            print("You picked up the sword")
+            current_room.description = current_room.alt_description
+            print("You picked up the sword.")
             return
+    elif current_room == wand_room:
+        if "wand" in command:
+            inventory.append("wand")
+            current_room.items.remove("wand")
+            current_room.description = current_room.alt_description
+            print("You picked up the wand.")
     for item in items:
         if item in command:
             inventory.append(item)
@@ -286,6 +295,7 @@ def get_command(current_room, inventory, stats):
                   "your cell, the guard slips and falls unconscious on the floor. His keys fall out of his hand and "
                   "land just outside the door to your cell.", width=120))
             current_room.monsters.remove("guard")
+            current_room.description = current_room.alt_description
             print()
             return current_room
 
@@ -379,9 +389,12 @@ def title_screen():
 
 cell_11 = Room("Cell 11", "You are in a cell with a cot against the south wall and a cell door in "
                           "the north wall. There is a bucket in the corner with water dripping into it. Outside of the "
-                          "cell door, is a guard standing watch at the end of the hall.", {"north": cell_hall,
-                          "east": None, "south": None, "west": None},["bucket of water", "jail keys"],
+                          "cell door, is a guard standing watch at the end of the hall.",["bucket of water", "jail keys"],
                    None, ["guard"], True)
+
+cell_11.alt_description = ("You are in a cell with a cot against the south wall and a cell door in the north wall. There "
+                           "is a small stream of water running out the cell door, past the guard's unconscious body.")
+
 cell_10 = Room("Cell 10", "There is a skeleton with withered remains of clothing draping over its "
                           "bones laying on the cot in this cell. The cell door is on the west wall.",{"north": None,
                           "east": None, "south": None,"west": cell_hall}, ["signet ring"],{0:"You search "
@@ -417,6 +430,10 @@ sword_room = Room("Sword Room", "You are in a small room with dim lighting. In t
                           ["sword"], {0: "There is a small round hole in the pedestal just in front of the "
                                          "blade of the sword."}, [], False)
 
+sword_room.alt_description = ("You are a small room with dim lighting. In the center of the room is the pedestal from "
+                              "which you took your sword in exchange for your ring. There is a door in the south wall.")
+
+
 statue_room = Room("Statue Room", "You are in a medium sized room with several rows of monster statues "
                          "of all different kinds. While counting, you see a cyclops, man-bat, pigman, goblin, ogre, "
                          "mimic, and minotaur to name a few. Your final count makes 25 total statues in the room. There "
@@ -434,6 +451,9 @@ wand_room = Room("Wand Room", "You are in a small room with a pedestal in the ce
                               "embedded in the tip of the wand. There are doors in the north and east walls.",
                         {"north": minotaur_room, "east":empty_room, "south": None, "west": None}, ["wand"],
                       None, None, False)
+
+wand_room.alt_description = ("You are in the small room from which you took your wand. You look at the familiar runes on"
+                             "the pedestal and ponder their meaning. There are exits on the north and east walls")
 
 minotaur_room = Room("Minotaur Room", "Upon entering this room, you are blasted with a wall of stench. "
                                 "It is so overpowering that you almost leave the room but you notice a menacing Minotaur"
@@ -510,13 +530,44 @@ garden = Room("Garden", "Light streams into this room from skylights in the ceil
 ogre_room = Room("Ogre Room", "You step into this room and are greeted by a thunderous roar. Across the "
                               "room you see a massive ogre heft a giant club onto his shoulder. Drool drips onto the "
                               "floor from his under-bitten jaw as he takes a step towards you, menacingly.",
-                        {"north": None, "east": lava_room, "south": None, "west": garden}, ["Ogre Tooth"],
+                        {"north": None, "east": lava_room, "south": None, "west": garden}, ["ogre tooth"],
                       None, ["Ogre"], False)
 
 lava_room = Room("Lava Room", "You step into this room and wilt under the oppressive heat. You see a "
                               "two foot wide bridge spanning a lava pool twenty feet below you. The bridge connects the "
                               "east and west walls, where this room’s doors are located.", {"north": None, "east":
                               library, "south": None, "west": ogre_room}, None, None, None, False)
+
+library = Room("Library", "You are in the biggest library you have ever seen. There are rows upon rows "
+                          "of bookshelves, packed to the brim that run from the floor to the ceiling. In the center of "
+                          "the room are some desks for studying. There are doors in the north, south, and west walls.",
+                    {"north": sob_rom, "east": None, "south": cyclops_room, "west": lave_room}, ["potion"],
+                  {0: "You search through the desks and find a small, glass bottle with a blue, shimmery liquid "
+                         "in it. The bottle is labeled “magic in a bottle” with poor handwriting."}, None, False)
+
+scroll_room = Room("Scroll Room", "You are in a dusty room with scroll cubbies lining the east and west "
+                                  "walls. In the center of the room, there is a lectern with a scroll unrolled, and held"
+                                  " open with paperweights. There are doors on the north and south walls.", {"north":
+                                  mimic_room, "east": None, "south": library, "west": None}, ["scroll of blasting"],
+                                  None, None, False)
+
+mimic_room = Room("Mimic Room", "You are in a simple, plain room with no ornamentation and no furniture "
+                                "other than a singular table, chair, and chest. There are doors on the east and south "
+                                "walls.", {"north": None, "east": key_exit, "south": scroll_room, "west": None},
+                          ["mimic tongue"], {0: "As you approach the chest, you notice that something"
+                                " about it looks…wrong. You reach out your hand only to snap it back as the chest lunges"
+                                " forwards, almost biting your hand off. It appears that the chest was really a mimic. "
+                                "The mimic seems to be squatting, as if to prepare for its next attack."},
+                       ["Mimic"], False)
+
+
+#==================================================
+# ROOM EXITS
+#==================================================
+
+cell_11.exits["north"] = cell_hall
+
+
 
 
 
