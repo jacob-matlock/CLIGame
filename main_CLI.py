@@ -518,27 +518,11 @@ lava_room = Room("Lava Room", "You step into this room and wilt under the oppres
                               "east and west walls, where this room’s doors are located.", {"north": None, "east":
                               library, "south": None, "west": ogre_room}, None, None, None, False)
 
-#######################################################################################################################
-"""This section connects all of the rooms together."""
-cell_11.exits["north"] = cell_hall
 
-cell_hall.exits["north"] = guard_chamber
-cell_hall.exits["east"] = cell_10
-cell_hall.exits["south"] = cell_11
 
-cell_10.exits["west"] = cell_hall
-
-guard_chamber.exits["north"] = large_room
-guard_chamber.exits["south"] = cell_hall
-guard_chamber.exits["west"] = sleeping_quarters
-
-sleeping_quarters.exits["east"] = guard_chamber
-
-large_room.exits["south"] = guard_chamber
-large_room.exits["north"] = sword_room
-
-sword_room.exits["south"] = large_room
-#######################################################################################################################
+#==================================================
+# GAME LOOP
+#==================================================
 
 first_command = title_screen()
 
