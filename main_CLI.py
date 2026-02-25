@@ -1,5 +1,13 @@
+#==================================================
+# IMPORTS
+#==================================================
 import os
 import textwrap
+
+
+#==================================================
+# CLASS DEFINITION
+#==================================================
 
 class Room:
     def __init__(self, name, description, exits, items, secrets, monsters, visited):
@@ -10,6 +18,11 @@ class Room:
         self.secrets = secrets
         self.monsters = monsters
         self.visited = visited
+
+
+#==================================================
+# USER ACTION FUNCTIONS
+#==================================================
 
 def create_map(current_room):
     clear_screen()
@@ -200,6 +213,11 @@ def unlock(current_room, inventory, command, stats):
 def use_item(command, inventory):
     pass
 
+
+#==================================================
+# HELPER FUNCTIONS
+#==================================================
+
 def parse_input(command):
     if "quit" in command or command == ["q"]:
         exit()
@@ -281,6 +299,10 @@ def get_command(current_room, inventory, stats):
         print("Invalid command. Please try again.")
 
 
+#==================================================
+# DISPLAY FUNCTIONS
+#==================================================
+
 def welcome_message():
     """
     This function displays the title and the first prompt for the user. It requires no parameters and returns nothing.
@@ -348,7 +370,11 @@ def title_screen():
     elif first_command == "quit" or first_command == 'q':
         return "quit"
 
-#######################################################################################################################
+
+
+#==================================================
+# ROOM CLASS OBJECTS
+#==================================================
 """This section of the code is creating the rooms and items in the game."""
 
 cell_11 = Room("Cell 11", "You are in a cell with a cot against the south wall and a cell door in "
