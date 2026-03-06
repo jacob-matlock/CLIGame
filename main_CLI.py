@@ -3,22 +3,44 @@
 #==================================================
 import os
 import textwrap
-
+import requests
 
 #==================================================
 # CLASS DEFINITION
 #==================================================
 
 class Room:
-    def __init__(self, name, description, items, secrets, monsters, visited):
+    """
+    This class enables the creation of a Room object that is used throughout the game. 
+    """
+    def __init__(self, name, description):
+        """
+        Parameters:
+        name - a string that holds the name of the object 
+        description - a string that holds text that is displayed to the user when entering a room
+        exits - a dictionary that holds the exits with keys north, east, south, and west
+        items - a list of strings that represent items in the room the user can pick up
+        secrets - a dictionary that holds strings as the values that display additional information when prompted
+        monsters - a list of strings that represent monsters the user must fight in the room
+        visited - a boolean that tracks if the user has been in the room or not
+        
+        coordinates - a tuple that contains the location of the room on the map
+             - defined in the random room placement microservice
+        alt_description - a string that is defined for some rooms that must have a change in description for any reason
+             - example: when a monster is slain, the description of the room if the user re-enters that room afterwards
+        """
         self.name = name
         self.description = description
         self.exits = {}
-        self.items = items
-        self.secrets = secrets
-        self.monsters = monsters
-        self.visited = visited
+        self.items = []
+        self.secrets = {}
+        self.monsters = []
+        self.visited = False
 
+#==================================================
+# GET ROOMS FROM MICROSERVICE
+#==================================================
+rooms_dict = requests.get(f"http://localhost:1400/room-layout")
 
 #==================================================
 # USER ACTION FUNCTIONS
@@ -35,12 +57,9 @@ def create_map(current_room):
         else:
             return f"[ ] {room.name}"
 
-    print()
-    print("                " + mark(large_room))
-    print("                     |")
     print("                " + mark(guard_chamber))
     print("                     |")
-    print("   " + mark(sleeping_quarters) + " ---- " + mark(cell_hall))
+    print("   " + mark(rope_exit) + " ---- " + mark(cell_hall))
     print("                     |")
 
     print("     [X] Cell 1      |      [X] Cell 6")
@@ -89,7 +108,10 @@ def pick_up_item(command, current_room, inventory):
             inventory.append("sword")
             current_room.items.remove("sword")
             current_room.description = current_room.alt_description
-            print("You picked up the sword.")
+            print("You slide the signet ring off your finger and see the same crest on it as on the sword. You push the"
+                  " ring into the hole in the pedestal and the ring sinks further into it as if by magic. As you take "
+                  "the shining sword, you find that you can suddenly read the words on the pedestal. The sentence reads:"
+                  " 'It's dangerous to go alone, take this!'")
             return
     elif current_room == wand_room:
         if "wand" in command:
@@ -379,197 +401,52 @@ def title_screen():
         return "play"
     elif first_command == "quit" or first_command == 'q':
         return "quit"
-
-
-
+    
 #==================================================
-# ROOM CLASS OBJECTS
+# FIXED ROOM CLASS OBJECTS
 #==================================================
-"""This section of the code is creating the rooms and items in the game."""
-
 cell_11 = Room("Cell 11", "You are in a cell with a cot against the south wall and a cell door in "
                           "the north wall. There is a bucket in the corner with water dripping into it. Outside of the "
-                          "cell door, is a guard standing watch at the end of the hall.",["bucket of water", "jail keys"],
-                   None, ["guard"], True)
-
-cell_11.alt_description = ("You are in a cell with a cot against the south wall and a cell door in the north wall. There "
-                           "is a small stream of water running out the cell door, past the guard's unconscious body.")
+                          "cell door, is a guard standing watch at the end of the hall.")
+cell_11.items = ["bucket of water", "jail keys"]
+cell_11.monsters = ["guard"]
+cell_11.visited = True
+cell_11.alt_description = ("You are in a cell with a cot against the south wall and a cell door in the north wall. "
+                           "There is a small stream of water running out the cell door, past the guard's unconscious "
+                           "body.")
 
 cell_10 = Room("Cell 10", "There is a skeleton with withered remains of clothing draping over its "
-                          "bones laying on the cot in this cell. The cell door is on the west wall.",{"north": None,
-                          "east": None, "south": None,"west": cell_hall}, ["signet ring"],{0:"You search "
-                          "through the debris in the cell and notice a glinting object on the skeleton's finger. It "
-                          "appears to be a Signet Ring."}, [], False)
+                          "bones laying on the cot in this cell. The cell door is on the west wall.")
+cell_10.items = ["signet ring"]
+cell_10.secrets = {0:"You search through the debris in the cell and notice a glinting object on the skeleton's finger. "
+                     "It appears to be a Signet Ring."}
 
 cell_hall = Room("Cell Hall", "There are 5 cells lining the walls on both the east and west sides of "
                               "the hall. They are numbered 1 - 11. You can see through the bars that there is a "
-                              "skeleton in cell 10. The door is to the north.", {"north": "Guard Chamber",
-                              "east": cell_10, "south": cell_11, "west": None},[], None, [], False)
+                              "skeleton in cell 10. The door is to the north.")
 
 guard_chamber = Room("Guard Chamber", "You are in what appears to be a guard chamber. There are wooden "
-                                      "lockers lining the east wall and doors on the north, south, and west walls.",
-                                 {"north": "Large Room", "east": None, "south": "Cell Hall", "west": "Sleeping "
-                                      "Quarters"},["parchment"],{0:"You search through the lockers and find "
-                                      "parchment in the bottom of one."}, [], False)
+                                      "lockers lining the east wall and doors on the north, south, and west walls.")
+guard_chamber.items = ["parchment"]
+guard_chamber.secrets = {0:"You search through the lockers and find parchment in the bottom of one."}
 
-sleeping_quarters = Room("Sleeping Quarters", "This room has with ten beds lining both the north and "
-                                              "south walls with a chest at the foot of each. There is a door to the"
-                                              " east.",{"north": None, "east": guard_chamber, "south": None,
-                                              "west": None},["ink"], {0: "You search through each chest and "
-                                              "find a bottle of ink in one."}, [], False)
-
-large_room = Room("Large Room", "You are in a large, empty room with a door on each wall. There are "
-                                "beautiful paintings lining the walls between the doors.", {"north":sword_room,
-                                "east":statue_room, "south": guard_chamber, "west":empty_room},None,
-                         None, [], False)
-
-sword_room = Room("Sword Room", "You are in a small room with dim lighting. In the center of the room "
-                                "is a pedestal with a shiny, glinting sword placed in it. Engraved on the hilt of the "
-                                "sword is a gryphon with a snake in its talons. There is a singular door in the south "
-                                "wall.", {"north": None, "east": None, "south": large_room, "west": None},
-                          ["sword"], {0: "There is a small round hole in the pedestal just in front of the "
-                                         "blade of the sword."}, [], False)
-
-sword_room.alt_description = ("You are a small room with dim lighting. In the center of the room is the pedestal from "
-                              "which you took your sword in exchange for your ring. There is a door in the south wall.")
-
-
-statue_room = Room("Statue Room", "You are in a medium sized room with several rows of monster statues "
-                         "of all different kinds. While counting, you see a cyclops, man-bat, pigman, goblin, ogre, "
-                         "mimic, and minotaur to name a few. Your final count makes 25 total statues in the room. There "
-                         "are doors on the east and west walls.", {"north": None, "east": kitchen, "south": None,
-                         "west": large_room}, None, None, None, False)
-
-empty_room = Room("Empty Room", "You are in a small room with torches lining the walls but is otherwise "
-                                "empty. There are doors on the east and west walls.", {"north": None, "east":
-                                large_room, "south": None, "west": wand_room}, None, None,
-                       None, False)
-
-wand_room = Room("Wand Room", "You are in a small room with a pedestal in the center. Carved on the "
-                              "pedestal are strange, curving runes. Placed on top of the pedestal is a thin wooden rod "
-                              "with similar runes engraved in it. Upon further inspection, you see a small diamond "
-                              "embedded in the tip of the wand. There are doors in the north and east walls.",
-                        {"north": minotaur_room, "east":empty_room, "south": None, "west": None}, ["wand"],
-                      None, None, False)
-
-wand_room.alt_description = ("You are in the small room from which you took your wand. You look at the familiar runes on"
-                             "the pedestal and ponder their meaning. There are exits on the north and east walls")
-
-minotaur_room = Room("Minotaur Room", "Upon entering this room, you are blasted with a wall of stench. "
-                                "It is so overpowering that you almost leave the room but you notice a menacing Minotaur"
-                                " with matted, midnight black fur across the room. It glares at you, snorting and "
-                                "stamping its feet, seemingly preparing to charge.", {"north": "Art Room",
-                                "east": None, "south": wand_room, "west": strange_room}, ["Minotaur Horn"],
-                         None, ["Minotaur"], False)
-
-strange_room = Room("Strange Room", "You are in a cluttered room with lots of strange, unfamiliar "
-                                "objects. Among them, a crystal orb, preserved monster parts, piles of bones and other "
-                                "curiosities. There are a few cabinets dotting the walls with doors on the north and "
-                                "east walls.", {"north": pit_room, "east": minotaur_room, "south": None,
-                                "west": None}, ["potion"], {0:"You search through the cabinets in the room and find a small "
-                                "glass bottle with a blue, shimmery liquid in it. The bottle is labeled “magic in a "
-                                "bottle” with poor handwriting."}, None, False)
-
-pit_room = Room("Pit Room", "You barely stop walking into this room in time to not fall into the gaping"
-                            " pit that spans the majority of where the floor should be. There is a narrow ledge running "
-                            "along the south and east walls, allowing passage between the two doors there.",
-                      {"north": None, "east": art_room, "south": strange_room, "west": None}, None,
-                    None, None, False)
-
-art_room = Room("Art Room", "You are in awe of the beauty in this room. Scattered throughout the dimly "
-                            "lit space are partially finished works of art. There is a painting of a beautiful sunset, "
-                            "left without its landscape, a statue of a man fighting an invisible enemy, with his legs "
-                            "forever entombed in stone, and many other pieces, abandoned by their creator. Aside from the "
-                            "art, you see a door on each wall.", {"north": gk_room, "east": garden,
-                            "south": minotaur_room, "west": pit_room}, None, None, None, False)
-
-gk_room = Room("Golden Key Room", "Suspended by a rope in the middle of this room is a golden key with "
-                                  "wings on its bow. There are doors on the north and south walls.", {"north":
-                                  torture_chamber, "east": None, "south": art_room, "west": None}, ["Golden Key"],
-                           None, None, False)
-
-torture_chamber = Room("Torture Chamber", "This room is full of medieval torture devices. Looking at "
-                                          "them sends shivers down your spine. There are doors to the west, south, and "
-                                          "east.", {"north": None, "east": workshop, "south": gk_room,
-                                          "west": manbat_room}, None, None, None, False)
-
-manbat_room = Room("Man-Bat Room", "At first glance, this room seemed empty, but as you look around, you"
-                                   " hear a slight squeaking coming from above you. You look up and see a man-bat hybrid"
-                                   " hanging from the ceiling. It appears to be smelling the air between you.",
-                             {"north": None, "east": torture_chamber, "south": None, "west": None},
-                            ["man-bat wing"], None, ["Man-Bat"], False)
-
-workshop = Room("Workshop", "This room is filled with machines belonging to masters of many different "
-                            "trades. There is a smithy, a tanning rack, carpenters tools, and plenty more. There is no "
-                            "work in progress at any of the workstations so it appears to serve more as a storage room "
-                            "right now. There are doors on the west, north, and east walls.", {"north": rope_exit,
-                            "east": dining_room, "south": None, "west": torture_chamber}, None, None,
-                   None, False)
-
-rope_exit = Room("Rope Exit", "This room is empty of any items. There are many cobwebs draping from the "
-                              "walls and ceiling. There is a door on the south wall.", {"north": None, "east": None,
-                              "south": workshop, "west": None}, None, {0: "Upon further inspection, you see a webbing "
-                              "network of cracks covering the northern wall. It seems like a strong enough force should "
-                              "be able to knock the wall down"}, None, False)
-
-dining_room = Room("Dining Room", "You are in a long dining room with a table spanning almost the length"
-                                  " of the whole room. There are chairs at each head and at even intervals down each "
-                                  "side. While the places at the table are set, ready for a meal, there is no food in "
-                                  "the room, save for some fresh fruit in bowls lining the center of the table. There "
-                                  "is a single door in the west wall.", {"north": None, "east": None, "south":
-                                  None, "west": workshop}, ["fruit"], {0: "You run your fingers along the"
-                                  " trim that lines the walls and you feel something catch. When you go back to see what"
-                                  " it was, you find that there is a small button embedded in the wood of the trim."},
-                         None, False)
-
-garden = Room("Garden", "Light streams into this room from skylights in the ceiling. The sunlight bathes"
-                        " and feeds rows upon rows of plants. You see fruits and vegetables of all kinds, ripe for the "
-                        "picking. There are doors in the east and west walls.", {"north": None, "east": ogre_room,
-                        "south": None, "west": art_room}, ["fruit", "vegetables"], None, None, False)
-
-ogre_room = Room("Ogre Room", "You step into this room and are greeted by a thunderous roar. Across the "
-                              "room you see a massive ogre heft a giant club onto his shoulder. Drool drips onto the "
-                              "floor from his under-bitten jaw as he takes a step towards you, menacingly.",
-                        {"north": None, "east": lava_room, "south": None, "west": garden}, ["ogre tooth"],
-                      None, ["Ogre"], False)
-
-lava_room = Room("Lava Room", "You step into this room and wilt under the oppressive heat. You see a "
-                              "two foot wide bridge spanning a lava pool twenty feet below you. The bridge connects the "
-                              "east and west walls, where this room’s doors are located.", {"north": None, "east":
-                              library, "south": None, "west": ogre_room}, None, None, None, False)
-
-library = Room("Library", "You are in the biggest library you have ever seen. There are rows upon rows "
-                          "of bookshelves, packed to the brim that run from the floor to the ceiling. In the center of "
-                          "the room are some desks for studying. There are doors in the north, south, and west walls.",
-                    {"north": sob_rom, "east": None, "south": cyclops_room, "west": lave_room}, ["potion"],
-                  {0: "You search through the desks and find a small, glass bottle with a blue, shimmery liquid "
-                         "in it. The bottle is labeled “magic in a bottle” with poor handwriting."}, None, False)
-
-scroll_room = Room("Scroll Room", "You are in a dusty room with scroll cubbies lining the east and west "
-                                  "walls. In the center of the room, there is a lectern with a scroll unrolled, and held"
-                                  " open with paperweights. There are doors on the north and south walls.", {"north":
-                                  mimic_room, "east": None, "south": library, "west": None}, ["scroll of blasting"],
-                                  None, None, False)
-
-mimic_room = Room("Mimic Room", "You are in a simple, plain room with no ornamentation and no furniture "
-                                "other than a singular table, chair, and chest. There are doors on the east and south "
-                                "walls.", {"north": None, "east": key_exit, "south": scroll_room, "west": None},
-                          ["mimic tongue"], {0: "As you approach the chest, you notice that something"
-                                " about it looks…wrong. You reach out your hand only to snap it back as the chest lunges"
-                                " forwards, almost biting your hand off. It appears that the chest was really a mimic. "
-                                "The mimic seems to be squatting, as if to prepare for its next attack."},
-                       ["Mimic"], False)
-
+rope_exit = Room("Rope Exit", "This room is empty of any items. There are many cobwebs draping from the"
+                              " walls and ceiling.")
+rope_exit.secrets = {0: "Upon further inspection, you see a webbing network of cracks covering the western wall. It "
+                        "seems like a strong enough force should be able to knock the wall down"}
+rope_exit.alt_description = ("Bright sunlight streams into this room from the hole you blasted in the wall. You can see "
+                             "the ground below you but it is too far to jump safely. You do see a thick tree branch "
+                             "extending away from the building above you.")
 
 #==================================================
-# ROOM EXITS
+# FIXED ROOM EXITS
 #==================================================
 
-cell_11.exits["north"] = cell_hall
-
-
-
-
+cell_11.exits = {"north": cell_hall, "east": None, "south": None, "west": None}
+cell_hall.exits = {"north": guard_chamber, "east": cell_10, "south": cell_11, "west": None}
+cell_10.exits = {"north": None, "east": None, "south": None, "west": cell_hall}
+guard_chamber.exits = {"north": large_room, "east": None, "south": cell_hall, "west": None}
+rope_exit.exits = {"north": None, "east": guard_chamber, "south": None, "west": None}
 
 #==================================================
 # GAME LOOP
